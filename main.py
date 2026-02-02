@@ -104,8 +104,8 @@ def train(args,log_path):
     if args.wandb:
         wandb.init(
             project="idea",
-            name=f"{args.dataset}_{args.idea_lr}_{args.sig_temp}_{args.threshold}_{args.weight_mode}",
-            tags=["edge_add"]
+            name=f"{args.dataset}_{args.lr}_{args.n_layers}_{args.lambda1}_{args.social_weight}",
+            tags=["original"]
         )
         
     log_save_id = create_log_id(args.save_dir)
@@ -371,7 +371,6 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1024)
     parser.add_argument('--threshold', type=float, default=0.0, help='threshold for pretrain edge addition (percentage)')
     parser.add_argument('--weight_mode', type=str, default='cosine')
-    parser.add_argument('--ss_every', type=int, default=1, help='compute self-supervised loss every N steps (1 = every step)')
     
     # DSM 관련 파라미터
     parser.add_argument('--update_social', type=int, default=0, help='1: Enable DSM-based social graph update')
@@ -384,6 +383,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     set_seed(args.seed) 
     set_numba_seed(args.seed)
+    # if args.lr == 0.001 or args.lr == 0.0001 or args.lr == 1e-4 or args.lr == 1e-3:
+    #     quit()
     
     # dataset =  args.dataset
     # if dataset == 'filmtrust':
