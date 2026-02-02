@@ -12,8 +12,8 @@ def to_tensor(coo_mat, device):
     i = torch.LongTensor(indices)
     v = torch.FloatTensor(values)
     shape = coo_mat.shape
-    tensor_sparse = torch.sparse.FloatTensor(i, v, torch.Size(shape))
-    return tensor_sparse.to(device)
+    tensor_sparse = torch.sparse_coo_tensor(i, v, torch.Size(shape))
+    return tensor_sparse.coalesce().to(device)
 
 class SocialLightGCN(nn.Module):
     def __init__(self, data, args):
