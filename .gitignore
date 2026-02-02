@@ -1,0 +1,8 @@
+**/logs
+**/wandb
+**/saved_model
+requirements.txt
+run_model.sh
+sweep.yaml
+**/__pycache__
+/idea
