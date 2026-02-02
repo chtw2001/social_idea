@@ -9,7 +9,7 @@ import scipy.sparse as sp
 import torch  
 import torch.optim as optim
 
-from model.MHCN import *
+from model.backbone import *
 from utils.evaluate_utils import *
 from utils.log_helper import *
 from loader.data_loader import SRDataLoader
@@ -103,7 +103,7 @@ def train(args,log_path):
     
     if args.wandb:
         wandb.init(
-            project="ides-MHCN",
+            project="idea",
             name=f"{args.dataset}_{args.idea_lr}_{args.sig_temp}_{args.threshold}_{args.weight_mode}",
             tags=["edge_add"]
         )
@@ -146,7 +146,7 @@ def train(args,log_path):
         prev_z = None  # DSM 모니터링용
         
 
-    model = MHCN(data,args).to(device)
+    model = SocialLightGCN(data,args).to(device)
     
     if args.update_social == 1:
         
@@ -364,6 +364,7 @@ if __name__ == '__main__':
     parser.add_argument('--lambda1', default=0.1,type=float)
     parser.add_argument('--lambda2', default=0.01,type=float)
     parser.add_argument('--neg_num', nargs='?', default=1) 
+    parser.add_argument('--social_weight', default=0.5,type=float)
 
     # parameter for diffusion model
     parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
@@ -376,7 +377,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_social', type=int, default=0, help='1: Enable DSM-based social graph update')
     parser.add_argument('--sig_temp', type=float, default=0.001, help='sigmoid temperature for DSM')
     parser.add_argument('--idea_lr', type=float, default=0.001, help='learning rate for DSM optimizer')
-    
+
     parser.add_argument('--wandb', type=int, default=1)
     parser.add_argument('--seed', type=int, default=42)
 
@@ -384,47 +385,47 @@ if __name__ == '__main__':
     set_seed(args.seed) 
     set_numba_seed(args.seed)
     
-    dataset =  args.dataset
-    if dataset == 'filmtrust':
-        args.n_layers = 2
-        args.lr = 1e-2
-        args.lambda1 = 1e-1
-        args.lambda2 = 5e-2
-    elif dataset == 'lastfm':
-        args.n_layers = 3
-        args.lr = 1e-4
-        args.lambda1 = 1e-1
-        args.lambda2 = 1e-2
-    elif dataset == 'ciao':
-        args.n_layers = 2
-        args.lr = 1e-4
-        args.lambda1 = 1e-2
-        args.lambda2 = 5e-2
-    elif dataset == 'douban':
-        args.n_layers = 2
-        args.lr = 1e-4
-        args.lambda1 = 1e-1
-        args.lambda2 = 1e-2
-    elif dataset == 'yelp':
-        args.n_layers = 2
-        args.lr = 5e-5
-        args.lambda1 = 1e-1
-        args.lambda2 = 2.5e-1
-    elif dataset == 'epinions':
-        args.n_layers = 2
-        args.lr = 1e-4
-        args.lambda1 = 1e-1
-        args.lambda2 = 1e-2
+    # dataset =  args.dataset
+    # if dataset == 'filmtrust':
+    #     args.n_layers = 2
+    #     args.lr = 1e-2
+    #     args.lambda1 = 1e-1
+    #     args.lambda2 = 5e-2
+    # elif dataset == 'lastfm':
+    #     args.n_layers = 3
+    #     args.lr = 1e-4
+    #     args.lambda1 = 1e-1
+    #     args.lambda2 = 1e-2
+    # elif dataset == 'ciao':
+    #     args.n_layers = 2
+    #     args.lr = 1e-4
+    #     args.lambda1 = 1e-2
+    #     args.lambda2 = 5e-2
+    # elif dataset == 'douban':
+    #     args.n_layers = 2
+    #     args.lr = 1e-4
+    #     args.lambda1 = 1e-1
+    #     args.lambda2 = 1e-2
+    # elif dataset == 'yelp':
+    #     args.n_layers = 2
+    #     args.lr = 5e-5
+    #     args.lambda1 = 1e-1
+    #     args.lambda2 = 2.5e-1
+    # elif dataset == 'epinions':
+    #     args.n_layers = 2
+    #     args.lr = 1e-4
+    #     args.lambda1 = 1e-1
+    #     args.lambda2 = 1e-2
         
     
     
     args.device = torch.device("cuda:{}".format(args.device) if torch.cuda.is_available() else "cpu")
 
-    save_dir = 'saved_model/{}/idea-MHCN/idea_lr{}_sig_temp{}_thr_{}_{}/'.format(
+    save_dir = 'saved_model/{}/idea/idea_lr{}_sig_temp{}_thr_{}_{}/'.format(
     args.dataset,args.idea_lr,args.sig_temp, args.threshold, args.weight_mode)
     args.save_dir = save_dir
 
-    log_path= 'saved_model/{}/idea-MHCN/idea_lr{}_sig_temp{}_thr_{}_{}/'.format(
+    log_path= 'saved_model/{}/idea/idea_lr{}_sig_temp{}_thr_{}_{}/'.format(
     args.dataset,args.idea_lr,args.sig_temp, args.threshold, args.weight_mode)
     
     train(args,log_path)
