@@ -6,3 +6,4 @@ run_model.sh
 sweep.yaml
 **/__pycache__
 /idea
+cron*

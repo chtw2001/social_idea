@@ -142,19 +142,28 @@ def save_model(model, model_dir, current_epoch,last_best_epoch=None):
            # print("exist and remove"+old_model_state_file)
             os.system('rm {}'.format(old_model_state_file))
 
-def evaluate(model,args,data,test=False, precomputed=None):
+def evaluate(model, args, data, test=False, precomputed=None, train=False):
     u_batch_size = data.test_batch_size
-    if not test:
-        testDict=data.valid_user_dict
+    
+    # [수정 1] train=True일 때 train_user_dict를 사용하도록 분기 처리
+    if train:
+        testDict = data.train_user_dict  # Data Loader에 이 변수가 있어야 합니다.
+        mode = "train"
+    elif test:
+        testDict = data.test_user_dict
+        mode = "test"
     else:
-        testDict=data.test_user_dict 
+        testDict = data.valid_user_dict
+        mode = "valid"
 
-    # Cache eval batches to avoid rebuilding the same lists every epoch.
+    # [수정 2] 캐시 키에 mode('train', 'test', 'valid')를 사용하여 구분
     cache = getattr(data, "_eval_cache", None)
     if cache is None:
         data._eval_cache = {}
         cache = data._eval_cache
-    cache_key = ("test" if test else "valid", u_batch_size)
+        
+    cache_key = (mode, u_batch_size) # mode 변수 사용
+    
     if cache_key in cache:
         user_ids_batches, target_items = cache[cache_key]
     else:
@@ -163,14 +172,17 @@ def evaluate(model,args,data,test=False, precomputed=None):
         user_ids_batches = [torch.LongTensor(d) for d in user_ids_batches]
         target_items = [ testDict[user_ids[i]] for i in range(len(user_ids))]
         cache[cache_key] = (user_ids_batches, target_items)
-    topN=eval(args.topN)
+        
+    topN = eval(args.topN)
     model.eval()
 
+    # [핵심] precomputed가 있으면 그대로 사용 (Train도 동일하게 적용됨)
     if precomputed is None:
         with torch.no_grad():
             all_users, all_items = model.infer_embedding()
     else:
         all_users, all_items = precomputed
+        
     all_items_t = all_items.t()
 
     predict_items = []
@@ -180,12 +192,14 @@ def evaluate(model,args,data,test=False, precomputed=None):
             batch = batch.to(all_users.device)
             user_embed = all_users[batch]
             prediction = torch.mm(user_embed, all_items_t)
-            exclude_index = []
-            exclude_items = []
-            for range_i, items in enumerate(allPos):
-                exclude_index.extend([range_i] * len(items))
-                exclude_items.extend(items)
-            prediction[exclude_index, exclude_items] = -(1<<10)
+            if not train: # Train 평가가 아닐 때만 이미 본 아이템 마스킹
+                exclude_index = []
+                exclude_items = []
+                for range_i, items in enumerate(allPos):
+                    exclude_index.extend([range_i] * len(items))
+                    exclude_items.extend(items)
+                prediction[exclude_index, exclude_items] = -(1<<10)
+            
             _, indices = torch.topk(prediction, topN[-1])
             indices = indices.cpu().numpy().tolist()
             predict_items.extend(indices) 

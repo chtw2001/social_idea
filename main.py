@@ -104,8 +104,8 @@ def train(args,log_path):
     if args.wandb:
         wandb.init(
             project="idea",
-            name=f"{args.dataset}_{args.lr}_{args.n_layers}_{args.lambda1}_{args.social_weight}",
-            tags=["original"]
+            name=f"{args.dataset}_{args.idea_lr}_{args.sig_temp}",
+            tags=["refine"]
         )
         
     log_save_id = create_log_id(args.save_dir)
@@ -235,6 +235,9 @@ def train(args,log_path):
         model.train()
         start_time = time.time()
         total_loss = 0.0
+        total_bpr = 0.0
+        total_reg = 0.0
+        total_ss = 0.0
         epoch_start_z = None
             
         if args.update_social == 1:
@@ -259,6 +262,9 @@ def train(args,log_path):
             losses = model.bpr_loss(batch_user, batch_pos_item, batch_neg_item)
             loss = losses[0]+losses[1]*args.lambda1+losses[2]*args.lambda2
             total_loss += loss.item()
+            total_bpr += losses[0].item()
+            total_reg += args.lambda1 * losses[1].item()
+            total_ss += args.lambda2 * losses[2]
             loss.backward()
             
             # DSM gradient norm 계산 (step 이전)
@@ -270,7 +276,9 @@ def train(args,log_path):
             rec_optimizer.step()
             if args.update_social == 1:
                 dsm_optimizer.step()
-        print('Backbone SR'+"Training Epoch {:03d} ".format(epoch) +'train loss {:.4f}'.format(total_loss) + " costs " + time.strftime(
+        print('Backbone SR'+"Training Epoch {:03d} ".format(epoch) +'train loss {:.4f}'.format(total_loss) 
+              + " = bpr {:.4f} + reg {:.4f} + ss {:.4f}".format(total_bpr, total_reg, total_ss)
+              + " costs " + time.strftime(
                             "%H: %M: %S", time.gmtime(time.time()-start_time)))
         print('---'*18)
         
@@ -284,6 +292,7 @@ def train(args,log_path):
         with torch.no_grad():
             all_users, all_items = model.infer_embedding()
 
+        # train_results = evaluate(model,args,data,test=False, precomputed=(all_users, all_items), train=True)
         valid_results = evaluate(model,args,data,test=False, precomputed=(all_users, all_items))
         test_results = evaluate(model,args,data,test=True, precomputed=(all_users, all_items))
         print_results(None, valid_results, test_results)
@@ -317,6 +326,17 @@ def train(args,log_path):
                 "test/NDCG@10": test_results[2][0],
                 "test/MRR@10": test_results[3][0],
                 "test/HR@10": test_results[4][0],
+                
+                # "train/Precision@10": train_results[0][0],
+                # "train/Recall@10": train_results[1][0],
+                # "train/NDCG@10": train_results[2][0],
+                # "train/MRR@10": train_results[3][0],
+                # "train/HR@10": train_results[4][0],
+                # "train/Precision@20": train_results[0][1],
+                # "train/Recall@20": train_results[1][1],
+                # "train/NDCG@20": train_results[2][1],
+                # "train/MRR@20": train_results[3][1],
+                # "train/HR@20": train_results[4][1],
             })
 
         if valid_results[1][1] > best_recall: 
@@ -386,22 +406,22 @@ if __name__ == '__main__':
     # if args.lr == 0.001 or args.lr == 0.0001 or args.lr == 1e-4 or args.lr == 1e-3:
     #     quit()
     
-    # dataset =  args.dataset
-    # if dataset == 'filmtrust':
-    #     args.n_layers = 2
-    #     args.lr = 1e-2
-    #     args.lambda1 = 1e-1
-    #     args.lambda2 = 5e-2
-    # elif dataset == 'lastfm':
-    #     args.n_layers = 3
-    #     args.lr = 1e-4
-    #     args.lambda1 = 1e-1
-    #     args.lambda2 = 1e-2
-    # elif dataset == 'ciao':
-    #     args.n_layers = 2
-    #     args.lr = 1e-4
-    #     args.lambda1 = 1e-2
-    #     args.lambda2 = 5e-2
+    dataset =  args.dataset
+    if dataset == 'lastfm':
+        args.n_layers = 2
+        args.lr = 1e-3
+        args.lambda1 = 1e-3
+        args.social_weight = 3e-1
+    elif dataset == 'ciao':
+        args.n_layers = 3
+        args.lr = 5e-3
+        args.lambda1 = 1e-3
+        args.social_weight = 3e-1
+    elif dataset == 'ciao':
+        args.n_layers = 3
+        args.lr = 1e-3
+        args.lambda1 = 5e-4
+        args.social_weight = 1e-1
     # elif dataset == 'douban':
     #     args.n_layers = 2
     #     args.lr = 1e-4
