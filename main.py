@@ -371,12 +371,12 @@ def train(args,log_path):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='filmtrust')
+    parser.add_argument('--dataset', type=str, default='lastfm')
     parser.add_argument('--data_path', type=str, default='datasets/')
     parser.add_argument('--epochs', type=int, default=5000)
     parser.add_argument('--stopping_steps', type=int, default=50)
     parser.add_argument('--topN', type=str, default='[10,20,50]')
-    parser.add_argument('--device', nargs='?', default=1,type=int)  
+    parser.add_argument('--device', nargs='?', default=0,type=int)  
 
     # parameter for sr backbone
     parser.add_argument('--n_layers', type=int, default=3)
@@ -393,11 +393,11 @@ if __name__ == '__main__':
     parser.add_argument('--weight_mode', type=str, default='cosine')
     
     # DSM 관련 파라미터
-    parser.add_argument('--update_social', type=int, default=0, help='1: Enable DSM-based social graph update')
-    parser.add_argument('--sig_temp', type=float, default=0.001, help='sigmoid temperature for DSM')
-    parser.add_argument('--idea_lr', type=float, default=0.001, help='learning rate for DSM optimizer')
+    parser.add_argument('--update_social', type=int, default=1, help='1: Enable DSM-based social graph update')
+    parser.add_argument('--sig_temp', type=float, default=0.2, help='sigmoid temperature for DSM')
+    parser.add_argument('--idea_lr', type=float, default=0.0005, help='learning rate for DSM optimizer')
 
-    parser.add_argument('--wandb', type=int, default=1)
+    parser.add_argument('--wandb', type=int, default=0)
     parser.add_argument('--seed', type=int, default=42)
 
     args = parser.parse_args()
@@ -417,7 +417,7 @@ if __name__ == '__main__':
         args.lr = 5e-3
         args.lambda1 = 1e-3
         args.social_weight = 3e-1
-    elif dataset == 'ciao':
+    elif dataset == 'douban':
         args.n_layers = 3
         args.lr = 1e-3
         args.lambda1 = 5e-4
