@@ -422,11 +422,11 @@ if __name__ == '__main__':
         args.lr = 1e-3
         args.lambda1 = 5e-4
         args.social_weight = 1e-1
-    # elif dataset == 'douban':
-    #     args.n_layers = 2
-    #     args.lr = 1e-4
-    #     args.lambda1 = 1e-1
-    #     args.lambda2 = 1e-2
+    elif dataset == 'yelp':
+        args.n_layers = 2
+        args.lr = 1e-3
+        args.lambda1 = 1e-2
+        args.social_weight = 1e-1
     # elif dataset == 'yelp':
     #     args.n_layers = 2
     #     args.lr = 5e-5
